@@ -1,83 +1,98 @@
 import CredentialsProvider from "next-auth/providers/credentials";
-import connectDB from "@/lib/db";
-import User from "@/models/User";
 import bcrypt from "bcryptjs";
+import dbConnect from "@/lib/mongodb";
+import User from "@/models/User";
+import Membership from "@/models/Membership";
 
 /**
- * Centralized NextAuth configuration.
- *
- * - Uses JWT strategy
- * - Injects organizationId into token
- * - Validates credentials
+ * Centralized NextAuth configuration for App Router.
  */
 export const authOptions = {
   session: {
     strategy: "jwt",
   },
 
+  pages: {
+    signIn: "/login",
+  },
+
   providers: [
     CredentialsProvider({
-      name: "Credentials",
+      name: "credentials",
+
       credentials: {
-        email: {},
-        password: {},
-        organizationId: {}, // important for multi-tenant
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
       },
 
       async authorize(credentials) {
-        await connectDB();
+        await dbConnect();
 
-        const { email, password, organizationId } = credentials;
-
-        if (!email || !password) {
+        if (!credentials?.email || !credentials?.password) {
           throw new Error("Missing credentials");
         }
 
-        const user = await User.findOne({ email });
+        const email = credentials.email.toLowerCase().trim();
+
+        const user = await User.findOne({ email }).select("+password");
 
         if (!user) {
-          throw new Error("User not found");
+          throw new Error("Invalid credentials");
         }
 
-        const isValid = await bcrypt.compare(password, user.password);
+        const isValid = await bcrypt.compare(
+          credentials.password,
+          user.password,
+        );
 
         if (!isValid) {
-          throw new Error("Invalid password");
-        }
-
-        // Multi-tenant validation
-        if (!organizationId) {
-          throw new Error("Organization not selected");
+          throw new Error("Invalid credentials");
         }
 
         return {
           id: user._id.toString(),
-          email: user.email,
           name: user.name,
-          organizationId, // injected into JWT
+          email: user.email,
         };
       },
     }),
   ],
 
   callbacks: {
+    /**
+     * Persist custom fields inside JWT
+     */
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
-        token.organizationId = user.organizationId;
+        token.userId = user.id;
+
+        await dbConnect();
+
+        const membership = await Membership.findOne({
+          userId: user.id,
+          status: "approved",
+        }).lean();
+
+        token.organizationId = membership?.organizationId?.toString() ?? null;
+
+        token.role = membership?.role ?? null;
       }
+
       return token;
     },
 
+    /**
+     * Expose JWT fields to session
+     */
     async session({ session, token }) {
-      session.user.id = token.id;
-      session.user.organizationId = token.organizationId;
+      if (session.user) {
+        session.user.id = token.userId;
+        session.user.organizationId = token.organizationId;
+        session.user.role = token.role;
+      }
+
       return session;
     },
-  },
-
-  pages: {
-    signIn: "/login",
   },
 
   secret: process.env.NEXTAUTH_SECRET,

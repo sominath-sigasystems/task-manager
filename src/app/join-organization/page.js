@@ -1,60 +1,64 @@
 "use client";
-
 import { useEffect, useState } from "react";
-import {
-  Search,
-  Building2,
-  ArrowRight,
-  LogIn,
-  Loader2,
-  UserPlus,
-} from "lucide-react";
-
+import { useRouter } from "next/navigation";
+import { ArrowRight, LogIn, Loader2, UserPlus } from "lucide-react";
+import { toast } from "sonner";
+import { useSession } from "next-auth/react";
 export default function JoinOrganizationPage() {
+  const router = useRouter();
+
   const [organizations, setOrganizations] = useState([]);
-  const [search, setSearch] = useState("");
-  const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [searching, setSearching] = useState(false);
   const [joiningId, setJoiningId] = useState(null);
+  const { data: session, status } = useSession();
 
   useEffect(() => {
-    fetchUserOrganizations();
+    if (status !== "authenticated") return;
+
+    async function checkOwnedOrganization() {
+      try {
+        const res = await fetch("/api/organizations/me", {
+          credentials: "include",
+        });
+
+        if (!res.ok) return;
+
+        const data = await res.json();
+
+        if (data.organization?.slug) {
+          router.replace(`/${data.organization.slug}/dashboard`);
+        }
+      } catch (error) {
+        console.error("Organization check failed:", error);
+      }
+    }
+
+    checkOwnedOrganization();
+  }, [status, router]);
+  useEffect(() => {
+    fetchOrganizations();
   }, []);
 
-  async function fetchUserOrganizations() {
+  async function fetchOrganizations() {
     setLoading(true);
+
     try {
-      const res = await fetch("/api/user/organizations", {
+      const res = await fetch("/api/organizations", {
         credentials: "include",
       });
-      if (!res.ok) throw new Error("Failed to load organizations");
+
+      if (!res.ok) {
+        toast.error(`Failed (${res.status})`);
+        throw new Error(`Failed (${res.status})`);
+      }
 
       const data = await res.json();
-      setOrganizations(data.organizations || []);
+      setOrganizations(data.organizations ?? []);
     } catch (err) {
-      console.error(err);
+      toast.error(err);
+      console.error("Fetch error:", err);
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function searchOrganization() {
-    if (!search.trim()) return;
-
-    setSearching(true);
-    try {
-      const res = await fetch(`/api/organization/search?query=${search}`, {
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Search failed");
-
-      const data = await res.json();
-      setResults(data.organizations || []);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setSearching(false);
     }
   }
 
@@ -62,21 +66,21 @@ export default function JoinOrganizationPage() {
     setJoiningId(orgId);
 
     try {
-      const res = await fetch("/api/organization/join", {
+      const res = await fetch("/api/join-request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ organizationId: orgId }),
       });
 
-      if (!res.ok) throw new Error("Join request failed");
-
-      // Update UI to pending
-      setResults((prev) =>
-        prev.map((org) =>
-          org._id === orgId ? { ...org, isPending: true } : org,
-        ),
-      );
+      if (!res.ok) {
+        toast.error("Join request failed");
+        throw new Error("Join request failed");
+      }
+      toast.success("Request send..");
+      // Refresh organization list
+      await fetchOrganizations();
     } catch (err) {
+      toast.error(err);
       console.error(err);
     } finally {
       setJoiningId(null);
@@ -84,7 +88,7 @@ export default function JoinOrganizationPage() {
   }
 
   function enterOrganization(slug) {
-    window.location.href = `http://${slug}.localhost:3000/login`;
+    router.push(`/${slug}/dashboard`);
   }
 
   return (
@@ -93,36 +97,14 @@ export default function JoinOrganizationPage() {
         <h1 className="text-4xl font-bold text-center mb-10">
           Select Organization
         </h1>
-        <p>Organizations not loading</p>
 
-        {/* SEARCH */}
-        <div className="relative mb-10">
-          <input
-            type="text"
-            placeholder="Search organization..."
-            className="w-full border p-4 rounded-xl"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && searchOrganization()}
-          />
-          <button
-            onClick={searchOrganization}
-            className="absolute right-2 top-2 px-4 py-2 bg-black text-white rounded-lg"
-          >
-            {searching ? (
-              <Loader2 className="animate-spin w-4 h-4" />
-            ) : (
-              "Search"
-            )}
-          </button>
-        </div>
-
-        {/* SEARCH RESULTS */}
-        {results.length > 0 && (
-          <div className="space-y-4 mb-12">
-            {results.map((org) => (
+        {loading ? (
+          <Loader2 className="animate-spin mx-auto" />
+        ) : organizations.length > 0 ? (
+          <div className="space-y-4">
+            {organizations.map((org) => (
               <div
-                key={org._id}
+                key={org.id}
                 className="flex justify-between items-center bg-white p-4 rounded-xl border"
               >
                 <div>
@@ -130,7 +112,7 @@ export default function JoinOrganizationPage() {
                   <p className="text-sm text-gray-400">{org.slug}.localhost</p>
                 </div>
 
-                {org.isMember ? (
+                {org.membershipStatus === "member" && (
                   <button
                     onClick={() => enterOrganization(org.slug)}
                     className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-lg"
@@ -138,20 +120,24 @@ export default function JoinOrganizationPage() {
                     <LogIn size={16} />
                     Enter
                   </button>
-                ) : org.isPending ? (
+                )}
+
+                {org.membershipStatus === "pending" && (
                   <button
                     disabled
                     className="px-4 py-2 bg-gray-300 text-gray-600 rounded-lg"
                   >
                     Pending Approval
                   </button>
-                ) : (
+                )}
+
+                {org.membershipStatus === "none" && (
                   <button
-                    onClick={() => sendJoinRequest(org._id)}
-                    disabled={joiningId === org._id}
+                    onClick={() => sendJoinRequest(org.id)}
+                    disabled={joiningId === org.id}
                     className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg"
                   >
-                    {joiningId === org._id ? (
+                    {joiningId === org.id ? (
                       <Loader2 className="animate-spin w-4 h-4" />
                     ) : (
                       <UserPlus size={16} />
@@ -162,38 +148,11 @@ export default function JoinOrganizationPage() {
               </div>
             ))}
           </div>
+        ) : (
+          <p className="text-gray-400 text-center">
+            No organizations available.
+          </p>
         )}
-
-        {/* USER ORGS */}
-        <div>
-          <h3 className="mb-4 font-semibold">Your Organizations</h3>
-
-          {loading ? (
-            <Loader2 className="animate-spin" />
-          ) : organizations.length > 0 ? (
-            <div className="space-y-4">
-              {organizations.map((org) => (
-                <button
-                  key={org._id}
-                  onClick={() => enterOrganization(org.slug)}
-                  className="w-full flex justify-between items-center bg-white p-4 rounded-xl border"
-                >
-                  <div>
-                    <p className="font-semibold">{org.name}</p>
-                    <p className="text-sm text-gray-400">
-                      {org.slug}.localhost
-                    </p>
-                  </div>
-                  <ArrowRight size={18} />
-                </button>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-400">
-              You haven't joined any organizations yet.
-            </p>
-          )}
-        </div>
       </main>
     </div>
   );

@@ -12,7 +12,7 @@ import {
   CheckCircle2,
   ArrowRight,
 } from "lucide-react";
-
+import { toast } from "sonner";
 export default function LoginPage() {
   const router = useRouter();
 
@@ -40,18 +40,23 @@ export default function LoginPage() {
           type: "success",
           message: "Login successful! Redirecting to dashboard...",
         });
+        toast.success("Login successful");
 
         // Redirect after success
         setTimeout(() => {
-          router.push("/dashboard");
+          router.push("/join-organization");
         }, 1000);
       } else {
+        toast.error("Invalid credentials");
+
         setStatus({
           type: "error",
           message: res?.error || "Invalid email or password.",
         });
       }
     } catch (err) {
+      toast.error("Network error, please try again.");
+
       setStatus({
         type: "error",
         message: "Network error, please try again.",
@@ -171,7 +176,7 @@ export default function LoginPage() {
 
           <div className="mt-10 pt-8 border-t border-slate-100 text-center">
             <p className="text-sm text-slate-500">
-              Don't have an account yet?{" "}
+              Don`t have an account yet?{" "}
               <button
                 onClick={() => router.push("/register")}
                 className="font-bold text-black hover:underline underline-offset-4"

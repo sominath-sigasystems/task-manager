@@ -3,79 +3,137 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
+import { usePathname } from "next/navigation";
 import {
   Rocket,
-  LogOut,
   Menu,
   X,
   LayoutDashboard,
   Briefcase,
   UserPlus,
   LogIn,
+  Settings,
+  LogOut,
+  User,
 } from "lucide-react";
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 export default function Navbar() {
   const { data: session } = useSession();
+  const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const NavLink = ({ href, children, icon: Icon }) => (
-    <Link
-      href={href}
-      className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-600 hover:text-black transition-colors rounded-lg hover:bg-slate-50"
-    >
-      {Icon && <Icon className="w-4 h-4" />}
-      {children}
-    </Link>
-  );
+  const slug = pathname?.split("/")[1];
+  const dashboardLink = slug ? `/${slug}/dashboard` : "/join-organization";
+  const profileLink = slug ? `/${slug}/profile` : "/profile";
+  const settingsLink = slug ? `/${slug}/settings` : "/settings";
+
+  const getInitials = (name) => {
+    if (!name) return "U";
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   return (
-    <nav className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-slate-200 font-sans">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+    <nav className="sticky top-0 z-50 w-full border-b bg-white backdrop-blur supports-[backdrop-filter]:bg-white/60">
+      <div className="w-full px-6">
+        <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link
-            href="/"
-            className="flex items-center gap-2 cursor-pointer group"
-          >
-            <div className="bg-black p-1.5 rounded-lg group-hover:scale-110 transition-transform">
+          <Link href="/" className="flex items-center gap-2">
+            <div className="bg-black p-1.5 rounded-lg">
               <Rocket className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-bold tracking-tight text-slate-900">
-              TaskManager
-            </span>
+            <span className="text-lg font-bold">TaskManager</span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-1">
+          {/* Desktop */}
+          <div className="hidden md:flex items-center gap-6">
             {session ? (
               <>
-                <NavLink href="/dashboard" icon={LayoutDashboard}>
-                  Dashboard
-                </NavLink>
-
-                <NavLink href="/projects" icon={Briefcase}>
-                  Projects
-                </NavLink>
-
-                <div className="h-4 w-px bg-slate-200 mx-2" />
-
-                <button
-                  onClick={() => signOut({ callbackUrl: "/" })}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                <Link
+                  href={dashboardLink}
+                  className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
                 >
-                  <LogOut className="w-4 h-4" />
-                  Logout
-                </button>
+                  <LayoutDashboard className="w-4 h-4" />
+                  Dashboard
+                </Link>
+
+
+                {/* Profile Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="focus:outline-none">
+                      <Avatar className="h-9 w-9 cursor-pointer">
+                        <AvatarImage
+                          src={session?.user?.image || ""}
+                          alt="Profile"
+                        />
+                        <AvatarFallback>
+                          {getInitials(session?.user?.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                    </button>
+                  </DropdownMenuTrigger>
+
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem asChild>
+                      <Link
+                        href={profileLink}
+                        className="flex items-center gap-2"
+                      >
+                        <User className="w-4 h-4" />
+                        Profile
+                      </Link>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem asChild>
+                      <Link
+                        href={settingsLink}
+                        className="flex items-center gap-2"
+                      >
+                        <Settings className="w-4 h-4" />
+                        Settings
+                      </Link>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuSeparator />
+
+                    <DropdownMenuItem
+                      onClick={() => signOut({ callbackUrl: "/" })}
+                      className="text-rose-600 focus:text-rose-600"
+                    >
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </>
             ) : (
               <>
-                <NavLink href="/join-organization" icon={LogIn}>
+                <Link
+                  href="/login"
+                  className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+                >
+                  <LogIn className="w-4 h-4" />
                   Login
-                </NavLink>
+                </Link>
 
                 <Link
                   href="/register"
-                  className="ml-2 bg-black text-white px-5 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 transition-all shadow-lg shadow-slate-200 active:scale-95"
+                  className="bg-black text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-black/80"
                 >
                   Register
                 </Link>
@@ -83,12 +141,9 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile Menu Toggle */}
-          <div className="md:hidden flex items-center">
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-2 text-slate-600 hover:text-black transition-colors"
-            >
+          {/* Mobile Toggle */}
+          <div className="md:hidden">
+            <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
               {isMobileMenuOpen ? (
                 <X className="w-6 h-6" />
               ) : (
@@ -99,47 +154,60 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Menu Overlay */}
+      {/* Mobile Menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-white border-b border-slate-200 animate-in slide-in-from-top-4 duration-200">
-          <div className="px-4 pt-2 pb-6 space-y-2">
+        <div className="md:hidden border-t bg-white">
+          <div className="px-6 py-4 space-y-4">
             {session ? (
               <>
                 <Link
-                  href="/dashboard"
-                  className="w-full flex items-center gap-3 px-4 py-3 text-slate-900 font-semibold bg-slate-50 rounded-xl"
+                  href={dashboardLink}
+                  className="flex items-center gap-3 text-sm font-medium"
                 >
-                  <LayoutDashboard className="w-5 h-5" /> Dashboard
+                  <LayoutDashboard className="w-5 h-5" />
+                  Dashboard
                 </Link>
 
                 <Link
-                  href="/projects"
-                  className="w-full flex items-center gap-3 px-4 py-3 text-slate-900 font-semibold bg-slate-50 rounded-xl"
+                  href={profileLink}
+                  className="flex items-center gap-3 text-sm font-medium"
                 >
-                  <Briefcase className="w-5 h-5" /> Projects
+                  <User className="w-5 h-5" />
+                  Profile
+                </Link>
+
+                <Link
+                  href={settingsLink}
+                  className="flex items-center gap-3 text-sm font-medium"
+                >
+                  <Settings className="w-5 h-5" />
+                  Settings
                 </Link>
 
                 <button
                   onClick={() => signOut({ callbackUrl: "/" })}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-rose-600 font-bold bg-rose-50 rounded-xl"
+                  className="flex items-center gap-3 text-sm font-semibold text-rose-600"
                 >
-                  <LogOut className="w-5 h-5" /> Logout
+                  <LogOut className="w-5 h-5" />
+                  Logout
                 </button>
               </>
             ) : (
               <>
                 <Link
                   href="/login"
-                  className="w-full flex items-center gap-3 px-4 py-3 text-slate-900 font-semibold bg-slate-50 rounded-xl"
+                  className="flex items-center gap-3 text-sm font-medium"
                 >
-                  <LogIn className="w-5 h-5" /> Login
+                  <LogIn className="w-5 h-5" />
+                  Login
                 </Link>
 
                 <Link
                   href="/register"
-                  className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-black text-white font-bold rounded-xl"
+                  className="flex items-center justify-center gap-3 bg-black text-white py-2 rounded-lg text-sm font-semibold"
                 >
-                  <UserPlus className="w-5 h-5" /> Register
+                  <UserPlus className="w-5 h-5" />
+                  Register
                 </Link>
               </>
             )}

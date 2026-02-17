@@ -1,6 +1,7 @@
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import SessionProviderWrapper from "@/components/SessionProviderWrapper";
+import { Toaster } from "sonner";
 
 export const metadata = {
   title: "Task Manager",
@@ -15,6 +16,7 @@ export default function RootLayout({ children }) {
           <Navbar />
           <main>{children}</main>
         </SessionProviderWrapper>
+        <Toaster richColors position="top-right" />
       </body>
     </html>
   );

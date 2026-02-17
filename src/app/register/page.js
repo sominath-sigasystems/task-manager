@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   Building2,
 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -49,9 +50,10 @@ export default function RegisterPage() {
       const data = await res.json();
 
       if (!res.ok) {
+        toast.error(data.message || "Registration failed");
         throw new Error(data.message || "Registration failed");
       }
-
+      toast.success("Account created successfully!");
       setStatus({
         type: "success",
         message: "Account created successfully!",
@@ -61,6 +63,7 @@ export default function RegisterPage() {
         router.push("/join-organization");
       }, 1200);
     } catch (err) {
+      toast.error(err.message || "Something went wrong");
       setStatus({
         type: "error",
         message: err.message || "Something went wrong",

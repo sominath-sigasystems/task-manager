@@ -26,7 +26,7 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
     setStatus({ type: null, message: "" });
-
+    console.log(email, password);
     try {
       // Call NextAuth Credentials Provider
       const res = await signIn("credentials", {
@@ -47,6 +47,8 @@ export default function LoginPage() {
           router.push("/join-organization");
         }, 1000);
       } else {
+        console.log(res?.error);
+
         toast.error("Invalid credentials");
 
         setStatus({
@@ -121,6 +123,7 @@ export default function LoginPage() {
                   className="block w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all placeholder:text-slate-400 text-slate-900 bg-slate-50/50 focus:bg-white sm:text-sm"
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={isLoading}
+                  value={email}
                 />
               </div>
             </div>
@@ -152,6 +155,7 @@ export default function LoginPage() {
                   placeholder="••••••••"
                   className="block w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all placeholder:text-slate-400 text-slate-900 bg-slate-50/50 focus:bg-white sm:text-sm"
                   onChange={(e) => setPassword(e.target.value)}
+                  value={password}
                   disabled={isLoading}
                 />
               </div>

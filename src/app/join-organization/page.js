@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, LogIn, Loader2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
+import { useOrganizationStore } from "@/store/organizationStore";
+
 export default function JoinOrganizationPage() {
   const router = useRouter();
 
@@ -11,7 +13,9 @@ export default function JoinOrganizationPage() {
   const [loading, setLoading] = useState(false);
   const [joiningId, setJoiningId] = useState(null);
   const { data: session, status } = useSession();
-
+  const setOrganizationId = useOrganizationStore(
+    (state) => state.setOrganizationId,
+  );
   useEffect(() => {
     if (status !== "authenticated") return;
 
@@ -26,13 +30,18 @@ export default function JoinOrganizationPage() {
         const data = await res.json();
 
         if (data.organization?.slug) {
+          setOrganizationId(data.organization._id);
+
+          console.log(
+            "Immediately after set:",
+            useOrganizationStore.getState().organizationId,
+          );
           router.replace(`/${data.organization.slug}/dashboard`);
         }
       } catch (error) {
         console.error("Organization check failed:", error);
       }
     }
-
     checkOwnedOrganization();
   }, [status, router]);
   useEffect(() => {
@@ -53,6 +62,7 @@ export default function JoinOrganizationPage() {
       }
 
       const data = await res.json();
+
       setOrganizations(data.organizations ?? []);
     } catch (err) {
       toast.error(err);
@@ -87,7 +97,13 @@ export default function JoinOrganizationPage() {
     }
   }
 
-  function enterOrganization(slug) {
+  function enterOrganization(slug, id) {
+    setOrganizationId(id);
+
+    console.log(
+      "Immediately after set:",
+      useOrganizationStore.getState().organizationId,
+    );
     router.push(`/${slug}/dashboard`);
   }
 
@@ -114,7 +130,7 @@ export default function JoinOrganizationPage() {
 
                 {org.membershipStatus === "member" && (
                   <button
-                    onClick={() => enterOrganization(org.slug)}
+                    onClick={() => enterOrganization(org.slug, org._id)}
                     className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-lg"
                   >
                     <LogIn size={16} />

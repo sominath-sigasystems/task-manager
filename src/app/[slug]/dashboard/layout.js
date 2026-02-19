@@ -9,12 +9,14 @@ import {
   UserCircle,
   Bell,
 } from "lucide-react";
+import { useOrganizationStore } from "@/store/organizationStore";
+import { useEffect } from "react";
 
 export default function DashboardLayout({ children }) {
   const { slug } = useParams();
   const pathname = usePathname();
   const router = useRouter();
-
+  const organizationId = useOrganizationStore((state) => state.organizationId);
   const menu = [
     { name: "Dashboard", icon: LayoutDashboard, path: "" },
     { name: "Members", icon: Users2, path: "members" },
@@ -24,6 +26,10 @@ export default function DashboardLayout({ children }) {
     { name: "Profile", icon: UserCircle, path: "profile" },
     { name: "Notifications", icon: Bell, path: "notification" },
   ];
+  useEffect(() => {
+    if (!organizationId) return;
+    console.log("Current Organization ID:", organizationId);
+  }, [organizationId]);
 
   return (
     <div className="flex min-h-screen">

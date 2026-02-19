@@ -59,6 +59,18 @@ export default function RegisterPage() {
         message: "Account created successfully!",
       });
 
+      // Auto login using credentials provider
+      const loginRes = await signIn("credentials", {
+        redirect: false,
+        email: form.email,
+        password: form.password,
+      });
+
+      if (!loginRes?.ok) {
+        throw new Error("Login failed after registration");
+      }
+
+      toast.success("Login successful");
       setTimeout(() => {
         router.push("/join-organization");
       }, 1200);

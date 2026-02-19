@@ -4,51 +4,6 @@ import dbConnect from "@/lib/mongodb";
 import Organization from "@/models/Organization";
 import Membership from "@/models/Membership";
 import JoinRequest from "@/models/JoinRequest";
-import { log } from "node:console";
-
-export async function POST(req) {
-  try {
-    await dbConnect();
-    console.log(authOptions);
-
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { name, slug } = await req.json();
-
-    if (!name?.trim() || !slug?.trim()) {
-      return Response.json(
-        { error: "Name and slug are required" },
-        { status: 400 },
-      );
-    }
-
-    // Prevent duplicate slug
-    const existing = await Organization.findOne({ slug });
-    if (existing) {
-      return Response.json({ error: "Slug already exists" }, { status: 409 });
-    }
-
-    const org = await Organization.create({
-      name: name.trim(),
-      slug: slug.trim(),
-    });
-
-    // Assign creator as owner
-    await Membership.create({
-      userId: session.user.id,
-      organizationId: org._id,
-      role: "organization_owner",
-    });
-
-    return Response.json({ organization: org }, { status: 201 });
-  } catch (error) {
-    console.error("Create organization error:", error);
-    return Response.json({ error: "Internal Server Error" }, { status: 500 });
-  }
-}
 
 // ================================
 // Get All Organizations with Status
@@ -60,7 +15,9 @@ export async function GET() {
     const session = await getServerSession(authOptions);
     console.log(session);
 
+    
     if (!session) {
+      debugger;
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 

@@ -4,10 +4,12 @@ import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
 import Organization from "@/models/Organization";
 import Membership from "@/models/Membership";
+import Role from "@/models/Role";
+import Permission from "@/models/Permission";
+import RolePermission from "@/models/RolePermission";
 
 /**
  * POST /api/register/organization
- * Creates user (if not exists) + organization + membership
  */
 export async function POST(req) {
   try {
@@ -25,7 +27,7 @@ export async function POST(req) {
 
     const normalizedSlug = slug.toLowerCase().trim().replace(/\s+/g, "-");
 
-    // Check slug first
+    // Check slug
     const existingSlug = await Organization.findOne({ slug: normalizedSlug });
     if (existingSlug) {
       return NextResponse.json(
@@ -58,20 +60,70 @@ export async function POST(req) {
       ownerId: user._id,
     });
 
-    // Ensure membership doesn't duplicate
-    const existingMembership = await Membership.findOne({
+    // ----------------------------
+    // CREATE DEFAULT ROLES
+    // ----------------------------
+
+    const roles = await Role.insertMany([
+      {
+        roleName: "Organization Owner",
+        code: "organization_owner",
+        description: "Full access to organization",
+        organizationId: organization._id,
+      },
+      {
+        roleName: "Member",
+        code: "member",
+        description: "Default member role",
+        organizationId: organization._id,
+      },
+    ]);
+
+    const ownerRole = roles.find((r) => r.code === "organization_owner");
+
+    // ----------------------------
+    // CREATE DEFAULT PERMISSIONS
+    // ----------------------------
+    const entities = ["organization", "project", "issue", "core_entity"];
+
+    const actions = ["create", "read", "update", "delete"];
+
+    const permissionsToInsert = [];
+
+    for (const entity of entities) {
+      for (const action of actions) {
+        permissionsToInsert.push({
+          permissionName: `${entity} ${action}`,
+          code: `${entity}_${action}`,
+          description: `Allows ${action} on ${entity}`,
+          organizationId: organization._id,
+        });
+      }
+    }
+    debugger;
+    const createdPermissions = await Permission.insertMany(permissionsToInsert);
+    // ----------------------------
+    // ASSIGN ALL PERMISSIONS TO OWNER ROLE
+    // ----------------------------
+
+    const rolePermissions = createdPermissions.map((permission) => ({
+      roleId: ownerRole._id,
+      permissionId: permission._id,
+      organizationId: organization._id,
+    }));
+
+    await RolePermission.insertMany(rolePermissions);
+
+    // ----------------------------
+    // CREATE MEMBERSHIP
+    // ----------------------------
+
+    await Membership.create({
       userId: user._id,
       organizationId: organization._id,
+      roleId: ownerRole._id,
+      status: "approved",
     });
-
-    if (!existingMembership) {
-      await Membership.create({
-        userId: user._id,
-        organizationId: organization._id,
-        role: "organization_owner", // must match enum
-        status: "approved",
-      });
-    }
 
     return NextResponse.json(
       {
@@ -82,7 +134,7 @@ export async function POST(req) {
         },
       },
       { status: 201 },
-    ); 
+    );
   } catch (error) {
     console.error("Organization register error:", error);
 
@@ -92,4 +144,3 @@ export async function POST(req) {
     );
   }
 }
-

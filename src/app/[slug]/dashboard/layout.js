@@ -8,6 +8,7 @@ import {
   Building2,
   UserCircle,
   Bell,
+  UserRoundCheckIcon,
 } from "lucide-react";
 import { useOrganizationStore } from "@/store/organizationStore";
 import { useEffect } from "react";
@@ -23,6 +24,7 @@ export default function DashboardLayout({ children }) {
     { name: "Teams", icon: Users2, path: "teams" },
     { name: "Organizations", icon: Building2, path: "organizations" },
     { name: "Projects", icon: FolderKanban, path: "projects" },
+    { name: "Roles", icon: UserRoundCheckIcon, path: "roles" },
     { name: "Profile", icon: UserCircle, path: "profile" },
     { name: "Notifications", icon: Bell, path: "notification" },
   ];

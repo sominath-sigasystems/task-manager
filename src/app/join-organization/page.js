@@ -62,7 +62,7 @@ export default function JoinOrganizationPage() {
       }
 
       const data = await res.json();
-
+      console.log(data);
       setOrganizations(data.organizations ?? []);
     } catch (err) {
       toast.error(err);

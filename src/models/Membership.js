@@ -14,10 +14,10 @@ const MembershipSchema = new mongoose.Schema(
       required: true,
     },
 
-    role: {
-      type: String,
-      enum: ["organization_owner", "member"],
-      default: "member",
+    roleId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Role",
+      required: true,
     },
 
     status: {

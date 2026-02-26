@@ -6,12 +6,7 @@ import connectDB from "@/lib/mongodb";
 import JoinRequest from "@/models/JoinRequest";
 import Membership from "@/models/Membership";
 
-/**
- * POST /api/join-request/update-status
- *
- * Updates a join request status (approved | rejected).
- * Only the organization owner can perform this action.
- */
+
 export async function POST(req) {
   try {
     await connectDB();
@@ -91,10 +86,21 @@ export async function POST(req) {
 
     if (status === "approved") {
       try {
+        // Fetch MEMBER role for this organization
+        const memberRole = await Role.findOne({
+          organizationId: organization._id,
+          code: "MEMBER",
+        });
+
+        if (!memberRole) {
+          throw new Error("Default MEMBER role not found");
+        }
+
+        // Create membership using roleId (ObjectId reference)
         await Membership.create({
           userId: joinRequest.userId,
           organizationId: organization._id,
-          role: "member",
+          roleId: memberRole._id,
           status: "approved",
         });
       } catch (err) {

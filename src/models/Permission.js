@@ -7,15 +7,19 @@ const PermissionSchema = new mongoose.Schema(
     permissionName: {
       type: String,
       required: true,
+      trim: true,
     },
 
     code: {
       type: String,
       required: true,
+      uppercase: true,
+      trim: true,
     },
 
     description: {
       type: String,
+      default: null,
     },
 
     organizationId: {
@@ -23,6 +27,12 @@ const PermissionSchema = new mongoose.Schema(
       ref: "Organization",
       required: true,
       index: true,
+    },
+
+    // 🔐 System permissions cannot be modified or deleted
+    isSystem: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true },

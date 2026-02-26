@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import dbConnect from "@/lib/mongodb";
+
 import User from "@/models/User";
 import Organization from "@/models/Organization";
 import Membership from "@/models/Membership";
@@ -8,9 +9,6 @@ import Role from "@/models/Role";
 import Permission from "@/models/Permission";
 import RolePermission from "@/models/RolePermission";
 
-/**
- * POST /api/register/organization
- */
 export async function POST(req) {
   try {
     await dbConnect();
@@ -18,6 +16,9 @@ export async function POST(req) {
     const body = await req.json();
     const { name, email, password, slug, logo, address, mobile } = body;
 
+    /* ---------------------------------------------------------
+       1️⃣ Validate Required Fields
+    --------------------------------------------------------- */
     if (!name || !email || !password || !slug) {
       return NextResponse.json(
         { message: "Missing required fields" },
@@ -27,8 +28,10 @@ export async function POST(req) {
 
     const normalizedSlug = slug.toLowerCase().trim().replace(/\s+/g, "-");
 
-    // Check slug
-    const existingSlug = await Organization.findOne({ slug: normalizedSlug });
+    const existingSlug = await Organization.findOne({
+      slug: normalizedSlug,
+    });
+
     if (existingSlug) {
       return NextResponse.json(
         { message: "Slug already taken" },
@@ -36,7 +39,9 @@ export async function POST(req) {
       );
     }
 
-    // Find or create user
+    /* ---------------------------------------------------------
+       2️⃣ Create or Find User
+    --------------------------------------------------------- */
     let user = await User.findOne({ email });
 
     if (!user) {
@@ -50,7 +55,9 @@ export async function POST(req) {
       });
     }
 
-    // Create organization
+    /* ---------------------------------------------------------
+       3️⃣ Create Organization (Tenant Root)
+    --------------------------------------------------------- */
     const organization = await Organization.create({
       name,
       slug: normalizedSlug,
@@ -60,32 +67,36 @@ export async function POST(req) {
       ownerId: user._id,
     });
 
-    // ----------------------------
-    // CREATE DEFAULT ROLES
-    // ----------------------------
-
+    /* ---------------------------------------------------------
+       4️⃣ Seed Default Roles (Tenant Scoped)
+    --------------------------------------------------------- */
     const roles = await Role.insertMany([
       {
         roleName: "Organization Owner",
-        code: "organization_owner",
+        code: "ORGANIZATION_OWNER",
         description: "Full access to organization",
         organizationId: organization._id,
+        scopeType: "ORGANIZATION",
+        scopeId: null,
       },
       {
         roleName: "Member",
-        code: "member",
+        code: "MEMBER",
         description: "Default member role",
         organizationId: organization._id,
+        scopeType: "ORGANIZATION",
+        scopeId: null,
       },
     ]);
 
-    const ownerRole = roles.find((r) => r.code === "organization_owner");
+    const ownerRole = roles.find((r) => r.code === "ORGANIZATION_OWNER");
 
-    // ----------------------------
-    // CREATE DEFAULT PERMISSIONS
-    // ----------------------------
-    const entities = ["organization", "project", "issue", "core_entity"];
+    const memberRole = roles.find((r) => r.code === "MEMBER");
 
+    /* ---------------------------------------------------------
+       5️⃣ Seed Default Permissions (Tenant Scoped)
+    --------------------------------------------------------- */
+    const entities = ["organization", "project", "issue", "team"];
     const actions = ["create", "read", "update", "delete"];
 
     const permissionsToInsert = [];
@@ -94,35 +105,47 @@ export async function POST(req) {
       for (const action of actions) {
         permissionsToInsert.push({
           permissionName: `${entity} ${action}`,
-          code: `${entity}_${action}`,
+          code: `${entity}_${action}`.toUpperCase(),
           description: `Allows ${action} on ${entity}`,
           organizationId: organization._id,
         });
       }
     }
-    debugger;
-    const createdPermissions = await Permission.insertMany(permissionsToInsert);
-    // ----------------------------
-    // ASSIGN ALL PERMISSIONS TO OWNER ROLE
-    // ----------------------------
 
-    const rolePermissions = createdPermissions.map((permission) => ({
+    const createdPermissions = await Permission.insertMany(permissionsToInsert);
+
+    /* ---------------------------------------------------------
+       6️⃣ Assign ALL Permissions to OWNER Role
+    --------------------------------------------------------- */
+    const ownerRolePermissions = createdPermissions.map((permission) => ({
       roleId: ownerRole._id,
       permissionId: permission._id,
       organizationId: organization._id,
     }));
 
-    await RolePermission.insertMany(rolePermissions);
+    await RolePermission.insertMany(ownerRolePermissions);
 
-    // ----------------------------
-    // CREATE MEMBERSHIP
-    // ----------------------------
+    /* ---------------------------------------------------------
+       7️⃣ Assign READ Permissions to MEMBER Role
+    --------------------------------------------------------- */
+    const memberRolePermissions = createdPermissions
+      .filter((p) => p.code.endsWith("_READ"))
+      .map((permission) => ({
+        roleId: memberRole._id,
+        permissionId: permission._id,
+        organizationId: organization._id,
+      }));
 
+    await RolePermission.insertMany(memberRolePermissions);
+
+    /* ---------------------------------------------------------
+       8️⃣ Create Membership + Assign OWNER Role to Creator
+    --------------------------------------------------------- */
     await Membership.create({
       userId: user._id,
       organizationId: organization._id,
       roleId: ownerRole._id,
-      status: "approved",
+      status: "ACTIVE",
     });
 
     return NextResponse.json(

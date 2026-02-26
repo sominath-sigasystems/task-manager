@@ -6,12 +6,14 @@ const MembershipSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
+      index: true,
     },
 
     organizationId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Organization",
       required: true,
+      index: true,
     },
 
     roleId: {
@@ -22,13 +24,19 @@ const MembershipSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["pending", "approved"],
-      default: "approved",
+      enum: ["ACTIVE", "INVITED", "SUSPENDED"],
+      default: "ACTIVE",
+    },
+
+    joinedAt: {
+      type: Date,
+      default: Date.now,
     },
   },
   { timestamps: true },
 );
 
+// One user can only have one membership per organization
 MembershipSchema.index({ userId: 1, organizationId: 1 }, { unique: true });
 
 export default mongoose.models.Membership ||

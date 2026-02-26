@@ -1,22 +1,39 @@
+// models/Project.js
+
 import mongoose from "mongoose";
 
 const ProjectSchema = new mongoose.Schema(
   {
-    name: String,
-    description: String,
-    owner: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+    name: {
+      type: String,
+      required: true,
+      trim: true,
     },
-    members: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-      },
-    ],
+
+    organizationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Organization",
+      required: true,
+      index: true,
+    },
+
+    teamId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Team",
+      default: null,
+      index: true,
+    },
+
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
   },
   { timestamps: true },
 );
+
+// Prevent duplicate project names within same organization
+ProjectSchema.index({ organizationId: 1, name: 1 }, { unique: true });
 
 export default mongoose.models.Project ||
   mongoose.model("Project", ProjectSchema);

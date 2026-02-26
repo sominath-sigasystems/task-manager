@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import {  NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import mongoose from "mongoose";
 
@@ -12,7 +12,7 @@ export async function GET(req) {
   try {
     await dbConnect();
 
-    // ✅ MUST pass authOptions
+    
     const session = await getServerSession(authOptions);
 
     console.log("SESSION IN API:", session);

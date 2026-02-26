@@ -12,6 +12,7 @@ import {
   Building2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { signIn } from "next-auth/react";
 
 export default function RegisterPage() {
   const router = useRouter();

@@ -2,26 +2,39 @@ import mongoose from "mongoose";
 
 const UserSchema = new mongoose.Schema(
   {
-    name: String,
+    name: {
+      type: String,
+      trim: true,
+    },
 
     email: {
       type: String,
-      unique: true,
       required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+      index: true,
     },
 
     password: {
       type: String,
       required: true,
     },
+
     image: {
-      type: String, // URL or cloud storage path
+      type: String,
       default: null,
     },
+
     onboardingStatus: {
       type: String,
       enum: ["REGISTERED", "PLAN_SELECTED", "PAID", "SETUP_COMPLETED"],
       default: "REGISTERED",
+    },
+
+    isActive: {
+      type: Boolean,
+      default: true,
     },
   },
   { timestamps: true },

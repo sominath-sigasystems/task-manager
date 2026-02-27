@@ -3,6 +3,7 @@ import { authOptions } from "@/lib/authOptions";
 import dbConnect from "@/lib/mongodb";
 import Membership from "@/models/Membership";
 import JoinRequest from "@/models/JoinRequest";
+import Role from "@/models/Role";
 
 export async function POST(req) {
   try {
@@ -21,10 +22,17 @@ export async function POST(req) {
         { status: 400 },
       );
 
-    // Already member?
+  
+
+    const role = await Role.findOne({
+      organizationId: organizationId,
+      code: "MEMBER",
+    });
+
+    de
     const membership = await Membership.findOne({
       userId,
-      organizationId,
+      organizationId
     });
 
     if (membership)
@@ -43,9 +51,11 @@ export async function POST(req) {
         { status: 409 },
       );
 
+     
     await JoinRequest.create({
       userId,
       organizationId,
+      
     });
 
     return Response.json(

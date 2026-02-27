@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 export default function JoinRequestsPage() {
   const organizationId = useOrganizationStore((state) => state.organizationId);
@@ -69,15 +70,16 @@ export default function JoinRequestsPage() {
       const data = await res.json();
       console.log(data);
       if (!res.ok) {
-        console.error("Failed to update request");
+        toast.error("Failed to update request");
         return;
       }
 
       setRequests((prev) =>
         prev.filter((request) => request._id !== requestId),
       );
+      toast.success(data.message);
     } catch (error) {
-      console.error("Update error:", error);
+      toast.error("Update error:", error);
     } finally {
       setProcessingId(null);
     }

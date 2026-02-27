@@ -15,7 +15,11 @@ const UserSchema = new mongoose.Schema(
       trim: true,
       index: true,
     },
-
+  organizationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Organization",
+      index: true,
+    },
     password: {
       type: String,
       required: true,

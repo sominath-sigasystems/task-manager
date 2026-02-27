@@ -147,6 +147,9 @@ export async function POST(req) {
       roleId: ownerRole._id,
       status: "ACTIVE",
     });
+    await User.findByIdAndUpdate(user._id, {
+      organizationId: organization._id,
+    });
 
     return NextResponse.json(
       {

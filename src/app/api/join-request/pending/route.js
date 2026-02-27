@@ -1,9 +1,8 @@
 import {  NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import mongoose from "mongoose";
-
 import dbConnect from "@/lib/mongodb";
-import { authOptions } from "@/lib/authOptions"; // ✅ IMPORTANT
+import { authOptions } from "@/lib/authOptions"; 
 import Organization from "@/models/Organization";
 import JoinRequest from "@/models/JoinRequest";
 

@@ -5,7 +5,7 @@ import { authOptions } from "@/lib/authOptions";
 import connectDB from "@/lib/mongodb";
 import JoinRequest from "@/models/JoinRequest";
 import Membership from "@/models/Membership";
-
+import Role from "@/models/Role";
 
 export async function POST(req) {
   try {
@@ -97,12 +97,18 @@ export async function POST(req) {
         }
 
         // Create membership using roleId (ObjectId reference)
-        await Membership.create({
-          userId: joinRequest.userId,
-          organizationId: organization._id,
-          roleId: memberRole._id,
-          status: "approved",
-        });
+       const result = await Membership.create({
+         userId: joinRequest.userId,
+         organizationId: organization._id,
+         roleId: memberRole._id,
+         status: "ACTIVE",
+       });
+
+        /// send the main to the user to there request is accepted.
+        return NextResponse.json(
+          { message: "Request approved.." },
+          { status: 200 },
+        );
       } catch (err) {
         // Duplicate entry error is fine if membership already exists
         if (err.code === 11000) {
@@ -118,6 +124,7 @@ export async function POST(req) {
     }
     return NextResponse.json({
       message: "Status updated successfully",
+      status: 200,
     });
   } catch (error) {
     console.error("Join request update error:", error);

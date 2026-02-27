@@ -24,7 +24,7 @@ const MembershipSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["ACTIVE", "INVITED", "SUSPENDED"],
+      enum: ["ACTIVE", "INVITED", "SUSPENDED", "REJECTED"],
       default: "ACTIVE",
     },
 

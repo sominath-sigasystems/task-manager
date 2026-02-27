@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams, usePathname, useRouter } from "next/navigation";
+import { redirect, useParams, usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Users2,
@@ -12,8 +12,17 @@ import {
 } from "lucide-react";
 import { useOrganizationStore } from "@/store/organizationStore";
 import { useEffect } from "react";
+import { authOptions } from "@/lib/authOptions";
+import { getServerSession } from "next-auth";
 
 export default function DashboardLayout({ children }) {
+  const session = getServerSession(authOptions);
+
+  if (session) {
+    console.log(session);
+  } else {
+    redirect("/login");
+  }
   const { slug } = useParams();
   const pathname = usePathname();
   const router = useRouter();

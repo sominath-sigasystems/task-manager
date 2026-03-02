@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   Rocket,
@@ -30,7 +29,6 @@ export default async function Home() {
   if (session) {
     redirect("/join-organization");
   }
-
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900 overflow-x-hidden selection:bg-blue-100 selection:text-blue-900">
@@ -66,17 +64,11 @@ export default async function Home() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-in fade-in slide-in-from-bottom-12 duration-1000 fill-mode-both delay-300">
-            <button
-              
-              className="group w-full sm:w-auto bg-black text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-2 active:scale-95 hover:shadow-2xl"
-            >
+            <button className="group w-full sm:w-auto bg-black text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-2 active:scale-95 hover:shadow-2xl">
               Get Started for Free
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
-            <button
-              
-              className="w-full sm:w-auto px-8 py-4 rounded-2xl font-bold text-lg border border-slate-200 bg-white hover:border-slate-400 transition-all active:scale-95"
-            >
+            <button className="w-full sm:w-auto px-8 py-4 rounded-2xl font-bold text-lg border border-slate-200 bg-white hover:border-slate-400 transition-all active:scale-95">
               Watch Demo
             </button>
           </div>

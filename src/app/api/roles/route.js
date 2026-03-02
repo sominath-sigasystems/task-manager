@@ -4,7 +4,7 @@ import Role from "@/models/Role";
 import Permission from "@/models/Permission";
 import RolePermission from "@/models/RolePermission";
 import connectDB from "@/lib/mongodb";
-import { authOptions } from "@/lib/authOptions";
+
 export async function POST(req) {
   try {
     await connectDB();
@@ -40,7 +40,7 @@ export async function POST(req) {
             code,
             description,
             organizationId,
-            scopeType,
+            scopeType: scopeType || "ORGANIZATION",
             scopeId: scopeId || null,
           },
         ],
@@ -73,17 +73,20 @@ export async function POST(req) {
       await session.commitTransaction();
       session.endSession();
 
-      return NextResponse.json({
-        message: "Role created successfully",
-        role: createdRole,
-      });
+      return NextResponse.json(
+        {
+          message: "Role created successfully",
+          role: createdRole,
+        },
+        { status: 201 },
+      );
     } catch (error) {
       await session.abortTransaction();
       session.endSession();
       throw error;
     }
   } catch (error) {
-    console.error(error);
+    console.error("Error creating role:", error);
 
     return NextResponse.json(
       { message: error.message || "Server Error" },
@@ -92,7 +95,7 @@ export async function POST(req) {
   }
 }
 
-async function GET(req) {
+export async function GET(req) {
   try {
     await connectDB();
 
@@ -107,7 +110,9 @@ async function GET(req) {
     }
 
     // 1️⃣ Get all roles for organization
-    const roles = await Role.find({ organizationId }).lean();
+    const roles = await Role.find({ organizationId })
+      .sort({ createdAt: -1 })
+      .lean();
 
     if (!roles.length) {
       return NextResponse.json({ roles: [] });
@@ -134,7 +139,7 @@ async function GET(req) {
     });
 
     rolePermissions.forEach((rp) => {
-      if (rp.permissionId) {
+      if (rp.permissionId && roleMap[rp.roleId]) {
         roleMap[rp.roleId].permissions.push({
           _id: rp.permissionId._id,
           code: rp.permissionId.code,
@@ -146,10 +151,16 @@ async function GET(req) {
 
     const finalRoles = Object.values(roleMap);
 
-    return NextResponse.json({ roles: finalRoles });
+    return NextResponse.json({
+      roles: finalRoles,
+      total: finalRoles.length,
+    });
   } catch (error) {
-    console.error(error);
+    console.error("Error fetching roles:", error);
 
-    return NextResponse.json({ message: "Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { message: error.message || "Server Error" },
+      { status: 500 },
+    );
   }
 }

@@ -31,10 +31,10 @@ export default function DashboardClientLayout({ children }) {
     { name: "Notifications", icon: Bell, path: "notification" },
   ];
 
-  useEffect(() => {
-    if (!organizationId) return;
-    console.log("Current Organization ID:", organizationId);
-  }, [organizationId]);
+  // useEffect(() => {
+  //   if (!organizationId) return;
+  //   // console.log("Current Organization ID:", organizationId);
+  // }, [organizationId]);
 
   return (
     <div className="flex min-h-screen">

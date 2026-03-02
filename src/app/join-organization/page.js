@@ -99,11 +99,12 @@ export default function JoinOrganizationPage() {
 
   function enterOrganization(slug, id) {
     setOrganizationId(id);
-
-    console.log(
-      "Immediately after set:",
-      useOrganizationStore.getState().organizationId,
-    );
+    if (id) {
+      console.log(
+        "Immediately after set:",
+        useOrganizationStore.getState().organizationId,
+      );
+    }
     router.push(`/${slug}/dashboard`);
   }
 
@@ -124,13 +125,13 @@ export default function JoinOrganizationPage() {
                 className="flex justify-between items-center bg-white p-4 rounded-xl border"
               >
                 <div>
-                  <p className="font-semibold">{org.name}</p>
+                  <p className="font-semibold uppercase">{org.name}</p>
                   <p className="text-sm text-gray-400">{org.slug}.localhost</p>
                 </div>
 
                 {org.membershipStatus === "member" && (
                   <button
-                    onClick={() => enterOrganization(org.slug, org._id)}
+                    onClick={() => enterOrganization(org.slug, org.id)}
                     className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-lg"
                   >
                     <LogIn size={16} />

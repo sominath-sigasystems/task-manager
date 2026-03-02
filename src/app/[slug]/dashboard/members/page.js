@@ -1,41 +1,67 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Search, MoreVertical, Mail, Calendar } from "lucide-react";
-
+import { useOrganizationStore } from "@/store/organizationStore";
 export default function MembersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
+  const [members, setMembers] = useState([]);
 
-  const members = [
-    {
-      id: 1,
-      name: "John Doe",
-      email: "john.doe@company.com",
-      role: "Admin",
-      status: "Active",
-      joinedDate: "2024-01-15",
-      avatar: "JD",
-    },
-    {
-      id: 2,
-      name: "Jane Smith",
-      email: "jane.smith@company.com",
-      role: "Editor",
-      status: "Active",
-      joinedDate: "2024-02-20",
-      avatar: "JS",
-    },
-    {
-      id: 3,
-      name: "Mark Wilson",
-      email: "mark.wilson@company.com",
-      role: "Viewer",
-      status: "Inactive",
-      joinedDate: "2024-03-10",
-      avatar: "MW",
-    },
-  ];
+   const organizationId = useOrganizationStore((state) => state.organizationId);
+useEffect(() => {
+  if (!organizationId) return;
+  console.log("Current Organization ID:", organizationId);
+     fetchMembers(organizationId);
+}, [organizationId]);
+
+
+  const fetchMembers = async (organizationId) => {
+    try {
+      console.log(`Fetching members... ${organizationId}`);
+      const res = await fetch(`/api/members?id=${organizationId}`, {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        throw new Error("Failed to fetch members");
+      }
+      const data = await res.json();
+      console.log(data.members);
+      setMembers(data.members);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  // const members = [
+  //   {
+  //     id: 1,
+  //     name: "John Doe",
+  //     email: "john.doe@company.com",
+  //     role: "Admin",
+  //     status: "Active",
+  //     joinedDate: "2024-01-15",
+  //     avatar: "JD",
+  //   },
+  //   {
+  //     id: 2,
+  //     name: "Jane Smith",
+  //     email: "jane.smith@company.com",
+  //     role: "Editor",
+  //     status: "Active",
+  //     joinedDate: "2024-02-20",
+  //     avatar: "JS",
+  //   },
+  //   {
+  //     id: 3,
+  //     name: "Mark Wilson",
+  //     email: "mark.wilson@company.com",
+  //     role: "Viewer",
+  //     status: "Inactive",
+  //     joinedDate: "2024-03-10",
+  //     avatar: "MW",
+  //   },
+  // ];
 
   const filteredMembers = members.filter((member) => {
     const matchesSearch =
